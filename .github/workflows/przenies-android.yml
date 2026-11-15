@@ -1,0 +1,55 @@
+# Przenosi wydania aplikacji na Androida (tagi android-v*) z repozytorium integrator-android-wydania do tego repozytorium.
+# Wydania z Androida dostają flagę "nie najnowsze", żeby program na Windows (który pyta o /releases/latest)
+# dalej widział jako najnowsze swoje wydanie. Uruchomienie ponowne pomija wydania, które już tu są.
+# Uruchamia się samo po wypchnięciu gałęzi "przenies-android" albo ręcznie: Actions -> Przeniesienie wydań Androida -> Run workflow.
+name: Przeniesienie wydań Androida
+on:
+  push:
+    branches: [przenies-android]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  przenies:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ZRODLO: nonomich4l/integrator-android-wydania
+      CEL: ${{ github.repository }}
+    steps:
+      - name: Przeniesienie
+        run: |
+          set -euo pipefail
+          NAJNOWSZE_PRZED=$(gh api "repos/$CEL/releases/latest" --jq .tag_name || true)
+          echo "Najnowsze wydanie przed: $NAJNOWSZE_PRZED"
+          # od najstarszego, żeby kolejność na liście była naturalna
+          gh api "repos/$ZRODLO/releases?per_page=100" --paginate --jq '.[] | select(.draft|not) | select(.tag_name|startswith("android-v")) | .tag_name' | sort -V > tagi.txt
+          cat tagi.txt
+          while read -r TAG; do
+            if gh api "repos/$CEL/releases/tags/$TAG" >/dev/null 2>&1; then echo "$TAG już jest - pomijam"; continue; fi
+            rm -rf pliki && mkdir pliki
+            gh release download "$TAG" --repo "$ZRODLO" --dir pliki
+            gh api "repos/$ZRODLO/releases/tags/$TAG" > rel.json
+            NAZWA=$(jq -r '.name // empty' rel.json); [ -n "$NAZWA" ] || NAZWA="Integrator TomarLublin (Android) ${TAG#android-v}"
+            jq -r '.body // ""' rel.json > opis.md
+            if [ ! -s opis.md ]; then
+              printf '%s\n' "Aplikacja na telefon z Androidem (8.0 lub nowszy)." \
+                "Pobierz plik APK na telefonie i otwórz go. Przy pierwszej instalacji Android zapyta o zgodę na instalowanie z tego źródła." \
+                "Aktualizację instaluj na poprzednią wersję (bez odinstalowywania) - ustawienia i hasła zostaną." > opis.md
+            fi
+            gh release create "$TAG" pliki/* --repo "$CEL" --target main --title "$NAZWA" --notes-file opis.md --latest=false
+            # sprawdzenie sum kontrolnych: plik tutaj = plik w źródle
+            rm -rf spr && mkdir spr && gh release download "$TAG" --repo "$CEL" --dir spr
+            (cd pliki && sha256sum *) > a.txt; (cd spr && sha256sum *) > b.txt
+            diff a.txt b.txt && echo "$TAG przeniesione, sumy zgodne"
+          done < tagi.txt
+          NAJNOWSZE_PO=$(gh api "repos/$CEL/releases/latest" --jq .tag_name)
+          echo "Najnowsze wydanie po: $NAJNOWSZE_PO"
+          if [ -n "$NAJNOWSZE_PRZED" ] && [ "$NAJNOWSZE_PO" != "$NAJNOWSZE_PRZED" ]; then
+            echo "::error::Zmieniło się najnowsze wydanie ($NAJNOWSZE_PRZED -> $NAJNOWSZE_PO). Przywracam."
+            gh release edit "$NAJNOWSZE_PRZED" --repo "$CEL" --latest
+            exit 1
+          fi
+          echo "### Przeniesione wydania Androida" >> "$GITHUB_STEP_SUMMARY"
+          cat tagi.txt >> "$GITHUB_STEP_SUMMARY"
+          echo "Najnowsze wydanie (dla programu na Windows): $NAJNOWSZE_PO" >> "$GITHUB_STEP_SUMMARY"
