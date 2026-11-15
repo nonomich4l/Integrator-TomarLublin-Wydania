@@ -1,0 +1,27 @@
+# Jednorazowo: usuwa z tego repozytorium kopie wydań Androida (tagi android-v*).
+# Od 15.11.2026 Android ma własne repozytorium wydań: Integrator-TomarLublin-Wydania-Android (oryginały są tam).
+# Uruchamia się po wypchnięciu gałęzi "windows-tylko"; najnowsze wydanie Windows (/releases/latest) zostaje bez zmian.
+name: Usunięcie kopii wydań Androida
+on:
+  push:
+    branches: [windows-tylko]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  usun:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CEL: ${{ github.repository }}
+    steps:
+      - name: Usunięcie
+        run: |
+          set -euo pipefail
+          PRZED=$(gh api "repos/$CEL/releases/latest" --jq .tag_name)
+          gh api "repos/$CEL/releases?per_page=100" --paginate --jq '.[] | select(.tag_name|startswith("android-v")) | .tag_name' > tagi.txt
+          cat tagi.txt
+          while read -r TAG; do gh release delete "$TAG" --repo "$CEL" --yes --cleanup-tag && echo "usunięto $TAG"; done < tagi.txt
+          PO=$(gh api "repos/$CEL/releases/latest" --jq .tag_name)
+          echo "Najnowsze przed: $PRZED, po: $PO"
+          [ "$PRZED" = "$PO" ] || { echo "::error::Zmieniło się najnowsze wydanie"; exit 1; }
