@@ -1,35 +1,26 @@
-# Wydania programów TomarLublin
+# Integrator TomarLublin – wydania programu na Windows
 
-Publiczne repozytorium z gotowymi do pobrania wersjami programów. Kodu źródłowego tu nie ma (jest w prywatnych
-repozytoriach). Pliki są w zakładce **[Releases](../../releases)**.
+Publiczne repozytorium z gotowymi wersjami programu **Synchronizacja** (Windows). Kodu źródłowego tu nie ma (jest
+w prywatnym repozytorium `Integrator-TomarLublin-Zrodlo`, folder `desktop/`). Pliki są w zakładce
+**[Releases](../../releases)**.
 
-| Program | Tagi wydań | Plik | Pobieranie |
-|---|---|---|---|
-| **Synchronizacja** (Windows) | `v2.2.4`, `v2.2.5.4` (czwarty człon = wersja testowa/beta) | `Synchronizacja-X.zip` + `wersja.json` | [najnowsza](../../releases/latest) |
-| **Integrator** (Android 8.0+) | `android-v1.0.1` | `Integrator-TomarLublin-X.apk` | lista [Releases](../../releases), szukaj „Android” |
+- Tagi: `v2.3.0` (oficjalne), `v2.2.5.4` (czwarty człon = wersja testowa/beta, oznaczona jako pre-release).
+- Każde wydanie: `Synchronizacja-X.zip`, `wersja.json` (numer, suma kontrolna, ewentualny podpis), `opis.md`.
+- Publikuje automat **Windows: wydanie** z repozytorium kodu.
 
-## Jak programy się aktualizują
+## Jak program się aktualizuje
 
-- **Program na Windows** pyta GitHuba o *najnowsze wydanie* tego repozytorium (`/releases/latest`) i pobiera z niego
-  `wersja.json` i paczkę `.zip`. Komputery z włączonym kanałem beta biorą najnowsze wydanie z plikiem `wersja.json`,
-  także testowe.
-- **Aplikacja na Androida** szuka najnowszego wydania z tagiem `android-v…` i pobiera plik `.apk`.
-
-**Ważne:** wydania Androida muszą być publikowane z flagą „nie najnowsze” (`make_latest: false` /
-`--latest=false`). Inaczej program na Windows uzna wydanie z Androida za swoje najnowsze i przestanie widzieć
-aktualizacje. Automat `.github/workflows/przenies-android.yml` sprawdza to i w razie czego przywraca poprawne wydanie.
-
-## Historia
-
-Do listopada 2026 wydania Androida były w osobnym repozytorium `integrator-android-wydania`. Zostały tu przeniesione
-z tymi samymi plikami (sprawdzone sumy kontrolne). Stare repozytorium zostaje, dopóki wszystkie telefony nie
-zaktualizują się do wersji, która szuka wydań tutaj.
+Program pobiera listę wydań tego repozytorium i wybiera najwyższą wersję z tagiem `v…` i plikiem `wersja.json`
+(wersje testowe tylko na komputerach z włączonym kanałem beta). Starsze wersje programu (przed 2.3.0) biorą
+najnowsze wydanie (`/releases/latest`), dlatego oficjalne wydania mają flagę „najnowsze”.
 
 ## Instalacja
 
-**Windows:** pobierz `Synchronizacja-X.zip` z [najnowszego wydania](../../releases/latest), rozpakuj i uruchom
+Pobierz `Synchronizacja-X.zip` z [najnowszego wydania](../../releases/latest), rozpakuj i uruchom
 `Synchronizacja.exe`. Kolejne wersje program zainstaluje sam.
 
-**Android:** na telefonie otwórz wydanie `android-v…`, pobierz plik `.apk` i otwórz go. Android zapyta o zgodę na
-instalowanie z przeglądarki. Aktualizację instaluj na poprzednią wersję, bez odinstalowywania: ustawienia i hasła
-zostaną.
+## Historia
+
+Do 15.11.2026 repozytorium nazywało się `synchronizacja-wydania`, a potem przez chwilę `Integrator-TomarLublin-Wydania`
+(wspólne z Androidem). GitHub przekierowuje stare nazwy, więc starsze wersje programu dalej znajdują aktualizacje.
+Wydania aplikacji na Androida są w `Integrator-TomarLublin-Wydania-Android`.
